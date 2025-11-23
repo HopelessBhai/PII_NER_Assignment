@@ -12,6 +12,7 @@ import modal
 
 APP_NAME = "pii-ner-assignment"
 REMOTE_PROJECT_DIR = PurePosixPath("/root/project")
+REMOTE_PROJECT_DIR_PATH = Path("/root/project")
 LOCAL_PROJECT_DIR = Path(__file__).parent
 DEFAULT_TIMEOUT = 60 * 60  # 1 hour
 
@@ -42,6 +43,13 @@ image = _base_image().add_local_dir(
     copy=True,
     ignore=_ignore_path,
 )
+
+
+def _resolve_remote_path(path_str: str) -> Path:
+    p = Path(path_str)
+    if p.is_absolute():
+        return p
+    return (REMOTE_PROJECT_DIR_PATH / p).resolve()
 
 
 def _format_cmd(cmd: Iterable[str]) -> List[str]:
@@ -122,7 +130,7 @@ def train(
         cmd += ["--eval_every", eval_every]
     _run(cmd)
 
-    src = Path(out_dir)
+    src = _resolve_remote_path(out_dir)
     persist_name = volume_subdir or src.name
     if persist_name and src.exists():
         dst = Path("/vol") / persist_name
@@ -130,6 +138,24 @@ def train(
             shutil.rmtree(dst)
         shutil.copytree(src, dst)
         print(f"Copied {src} to volume at /vol/{persist_name}")
+    else:
+        print(f"[warning] Skipped volume copy because {src} does not exist.")
+
+
+@modal_task(gpu=None, timeout=15 * 60)
+def download(out_dir: str = "out", archive_name: str = "model.zip"):
+    """Streams a zipped model directory back to stdout."""
+    src = _resolve_remote_path(out_dir)
+    if not src.exists():
+        raise FileNotFoundError(f"{src} does not exist in the container.")
+    archive_path = Path("/tmp") / archive_name
+    subprocess.run(
+        ["zip", "-r", str(archive_path), src.name],
+        cwd=str(src.parent),
+        check=True,
+    )
+    with open(archive_path, "rb") as fh:
+        shutil.copyfileobj(fh, Path("/proc/self/fd/1").open("wb"))
 
 
 @modal_task(gpu="A100")
