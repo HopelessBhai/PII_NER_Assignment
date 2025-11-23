@@ -1,0 +1,15 @@
+[project]
+name = "pii-ner-assignment"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.3.5",
+    "seqeval>=1.2.2",
+    "datasets>=3.1.0",
+    "modal>=0.61.0",
+    "torch>=2.9.1",
+    "tqdm>=4.67.1",
+    "transformers>=4.57.1",
+]
