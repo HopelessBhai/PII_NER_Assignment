@@ -1,6 +1,6 @@
 # PII NER Assignment
 
-Token-level NER pipeline that trains DistilBERT-style models to tag PII in noisy STT transcripts, with tooling to ingest larger datasets (e.g., `ai4privacy/pii-masking-200k`) and run training/inference on Modal A100 GPUs.
+Token-level NER pipeline that trains lightweight BERT-style models (default: `prajjwal1/bert-mini`) to tag PII in noisy STT transcripts, with tooling to ingest larger datasets (e.g., `ai4privacy/pii-masking-200k`) and run training/inference on Modal A100 GPUs.
 
 ---
 
@@ -45,7 +45,7 @@ uv run python scripts/split_dataset.py \
 
 ```bash
 uv run python src/train.py \
-  --model_name distilbert-base-uncased \
+  --model_name prajjwal1/bert-mini \
   --train data/pii_en_train.jsonl \
   --dev data/pii_en_dev.jsonl \
   --out_dir out/pii_en \
@@ -86,7 +86,7 @@ All Modal functions mount the repo and a persistent volume `pii-ner-models` at `
 ### Train on A100
 ```powershell
 uv run modal run modal_app.py::train `
-  --model-name distilbert-base-uncased `
+  --model-name prajjwal1/bert-mini `
   --train-path data/pii_en_train.jsonl `
   --dev-path data/pii_en_dev.jsonl `
   --out-dir out/pii_en `
@@ -156,7 +156,22 @@ uv run modal run modal_app.py::download --out-dir /vol/pii_en_run1 --archive-nam
 
 ---
 
-## 6. Notes
+## 6. Optional CPU Quantization
+
+Dynamic quantization can significantly reduce CPU latency without retraining:
+
+```bash
+uv run python scripts/quantize_model.py \
+  --model_dir out/pii_en/best \
+  --output_dir out/pii_en_quantized \
+  --dtype qint8
+```
+
+Then point inference/latency scripts at `out/pii_en_quantized` instead of the original checkpoint.
+
+---
+
+## 7. Notes
 
 - `src/train.py` supports gradient accumulation, class weighting, mixed precision (`--fp16`), layer freezing, and dev evaluation either per epoch or every `--eval_every` steps.
 - Predictions are deduplicated spans with auto `pii` flags derived from labels defined in `src/labels.py`.

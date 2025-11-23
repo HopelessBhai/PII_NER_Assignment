@@ -30,11 +30,19 @@ def _ignore_path(path: Path) -> bool:
     return path.suffix in {".pyc", ".pyo"}
 
 def _base_image():
-    return (
-        modal.Image.debian_slim()
-        .apt_install("git")
-        .pip_install("uv")
-    )
+    image = modal.Image.debian_slim().apt_install("git").pip_install("uv")
+    requirements_path = LOCAL_PROJECT_DIR / "requirements.txt"
+    if requirements_path.exists():
+        image = (
+            image.add_local_file(
+                str(requirements_path),
+                "/tmp/requirements.txt",
+                copy=True,
+            ).run_commands(
+                "uv pip install --system --no-cache-dir -r /tmp/requirements.txt"
+            )
+        )
+    return image
 
 
 image = _base_image().add_local_dir(
@@ -89,7 +97,7 @@ def modal_task(gpu: Optional[str] = None, timeout: int = DEFAULT_TIMEOUT):
 
 @modal_task(gpu="A100")
 def train(
-    model_name: str = "distilbert-base-uncased",
+    model_name: str = "prajjwal1/bert-mini",
     out_dir: str = "out",
     train_path: str = "data/train.jsonl",
     dev_path: str = "data/dev.jsonl",
@@ -212,6 +220,7 @@ def latency(
     input_path: str = "data/dev.jsonl",
     runs: int = 50,
     device: str = "cuda",
+    max_length = 256,
     force_reinstall: bool = False,
 ):
     """Measure inference latency on Modal hardware."""
@@ -227,6 +236,8 @@ def latency(
         runs,
         "--device",
         device,
+        "--max_length",
+        max_length
     ]
     _run(cmd)
 

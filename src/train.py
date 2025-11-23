@@ -24,7 +24,7 @@ from span_utils import bio_to_spans, span_metrics
 
 def parse_args():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model_name", default="distilbert-base-uncased")
+    ap.add_argument("--model_name", default="prajjwal1/bert-mini")
     ap.add_argument("--train", default="data/train.jsonl")
     ap.add_argument("--dev", default="data/dev.jsonl")
     ap.add_argument("--out_dir", default="out")

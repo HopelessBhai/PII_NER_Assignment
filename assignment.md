@@ -122,7 +122,7 @@ Your prediction file should be a single JSON object:
 pip install -r requirements.txt
 
 python src/train.py \
-  --model_name distilbert-base-uncased \
+  --model_name prajjwal1/bert-mini \
   --train data/train.jsonl \
   --dev data/dev.jsonl \
   --out_dir out
@@ -175,7 +175,7 @@ python src/measure_latency.py \
 pip install -r requirements.txt
 
 python src/train.py \
-  --model_name distilbert-base-uncased \
+  --model_name prajjwal1/bert-mini \
   --train data/train.jsonl \
   --dev data/dev.jsonl \
   --out_dir out
